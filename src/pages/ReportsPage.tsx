@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import {
   ArrowLeft,
+  Plus,
+  Copy,
+  Trash2,
   SlidersHorizontal,
   Mail,
   Printer,
@@ -32,15 +35,6 @@ const REPORT = {
   createdBy: 'Admin LMS',
   createdAt: 'Aug 18, 2026',
   pdfGenerated: 'Sep 28, 2026',
-  sections: [
-    { id: 'technical', num: '01', title: 'Technical & speed', score: 4, verdict: 'Weak' as const },
-    { id: 'performance', num: '02', title: 'Performance summary', score: null, verdict: null },
-    { id: 'search', num: '03', title: 'Search performance', score: 8.5, verdict: 'Strong' as const },
-    { id: 'onpage', num: '04', title: 'On-page & local signals', score: 6.5, verdict: 'Needs Work' as const },
-    { id: 'local', num: '05', title: 'Local SEO', score: 3, verdict: 'Weak' as const },
-    { id: 'priority', num: '06', title: 'Priority fixes', score: null, verdict: null },
-    { id: 'work', num: '07', title: 'Work this period', score: null, verdict: null },
-  ],
   technical: {
     score: 4,
     measures: [
@@ -155,6 +149,13 @@ const REPORT = {
   },
 };
 
+// List of reports produced for this client (opens the detail view above).
+const REPORTS_LIST = [
+  { id: 'r1', name: 'July 2026', period: 'Jul 1, 2026 – Jul 31, 2026', author: 'Admin LMS', created: 'Aug 18, 2026' },
+  { id: 'r2', name: 'June 2026', period: 'Jun 1, 2026 – Jun 30, 2026', author: 'Admin LMS', created: 'Jul 14, 2026' },
+  { id: 'r3', name: 'Q2 2026 Summary', period: 'Apr 1, 2026 – Jun 30, 2026', author: 'Admin LMS', created: 'Jul 8, 2026' },
+];
+
 /* ------------------------------------------------------------------ */
 /* Shared bits                                                         */
 /* ------------------------------------------------------------------ */
@@ -195,27 +196,18 @@ const priorityStyle: Record<string, string> = {
   Low: 'bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0]',
 };
 
-const SectionCard: React.FC<{
-  id: string;
-  num: string;
-  title: string;
-  score?: number;
-  children: React.ReactNode;
-}> = ({ id, num, title, score, children }) => (
-  <section id={id} className="scroll-mt-24 bg-white border border-[#e2e8f0] rounded-[14px] shadow-[0px_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
-    <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[#e2e8f0] bg-[#f8fafc]">
-      <div className="flex items-center gap-3">
-        <span className="text-[11px] font-mono font-bold text-[#94a3b8]">{num}</span>
-        <h2 className="text-[15px] sm:text-base font-bold text-[#0f172a] tracking-tight">{title}</h2>
-      </div>
-      {score !== undefined && (
-        <span className="text-sm font-bold text-[#0f172a] tabular-nums">
-          {score}<span className="text-[#94a3b8] font-semibold">/10</span>
-        </span>
-      )}
+const SectionHeading: React.FC<{ num: string; title: string; score?: number }> = ({ num, title, score }) => (
+  <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center gap-3">
+      <span className="text-[11px] font-mono font-bold text-[#94a3b8]">{num}</span>
+      <h2 className="text-base font-bold text-[#0f172a] tracking-tight">{title}</h2>
     </div>
-    <div className="p-5 sm:p-6 space-y-5">{children}</div>
-  </section>
+    {score !== undefined && (
+      <span className="text-sm font-bold text-[#0f172a] tabular-nums">
+        {score}<span className="text-[#94a3b8] font-semibold">/10</span>
+      </span>
+    )}
+  </div>
 );
 
 const DataTable: React.FC<{ headers: string[]; children: React.ReactNode }> = ({ headers, children }) => (
@@ -240,24 +232,246 @@ const DataTable: React.FC<{ headers: string[]; children: React.ReactNode }> = ({
   </div>
 );
 
+const Panel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="bg-white border border-[#e2e8f0] rounded-[14px] shadow-[0px_1px_3px_rgba(0,0,0,0.04)] p-5 sm:p-6 space-y-5">
+    {children}
+  </div>
+);
+
 /* ------------------------------------------------------------------ */
-/* Page                                                                */
+/* Section bodies (one per tab)                                        */
+/* ------------------------------------------------------------------ */
+
+const TechnicalBody = () => (
+  <Panel>
+    <SectionHeading num="01" title="Technical & Speed" score={REPORT.technical.score} />
+    <DataTable headers={['Measure', 'Result', 'Status']}>
+      {REPORT.technical.measures.map((m) => (
+        <tr key={m.measure} className="border-b border-[#f1f5f9] last:border-0">
+          <td className="py-2.5 px-1 font-medium text-[#0f172a]">{m.measure}</td>
+          <td className="py-2.5 px-1 text-[#475569] tabular-nums">{m.result}</td>
+          <td className="py-2.5 px-1 text-right"><StatusBadge status={m.status} /></td>
+        </tr>
+      ))}
+    </DataTable>
+    <div>
+      <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-2">Issues & opportunities</div>
+      <DataTable headers={['Issue', 'Opportunity', 'Status']}>
+        {REPORT.technical.issues.map((i) => (
+          <tr key={i.issue} className="border-b border-[#f1f5f9] last:border-0">
+            <td className="py-2.5 px-1 font-medium text-[#0f172a]">{i.issue}</td>
+            <td className="py-2.5 px-1 text-[#475569]">{i.opportunity}</td>
+            <td className="py-2.5 px-1 text-right"><StatusBadge status={i.status} /></td>
+          </tr>
+        ))}
+      </DataTable>
+    </div>
+  </Panel>
+);
+
+const SummaryBody = () => (
+  <Panel>
+    <SectionHeading num="02" title="Performance summary" />
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {REPORT.highlights.map((h) => {
+        const Icon = h.icon;
+        return (
+          <div key={h.label} className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-4">
+            <Icon className="w-4 h-4 text-[#94a3b8] mb-2" />
+            <div className="text-2xl font-bold text-[#0f172a] tracking-tight leading-none mb-1.5">{h.value}</div>
+            <div className="text-[11px] text-[#64748b] leading-snug">{h.label}</div>
+          </div>
+        );
+      })}
+    </div>
+    <p className="text-sm text-[#475569] leading-relaxed">{REPORT.narrative}</p>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {REPORT.breakdown.map((b) => (
+        <div key={b.num} className="flex items-center justify-between rounded-[12px] border border-[#e2e8f0] p-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono font-bold text-[#94a3b8]">{b.num}</span>
+              <span className="text-sm font-semibold text-[#0f172a] truncate">{b.title}</span>
+            </div>
+            <div className="text-[11px] text-[#64748b] mt-0.5">{b.desc}</div>
+          </div>
+          <div className="text-right shrink-0 ml-3">
+            <div className={`text-[10px] font-bold uppercase tracking-wider ${verdictStyle[b.verdict]}`}>{b.verdict}</div>
+            <div className="text-sm font-bold text-[#0f172a] tabular-nums">{b.score}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+    <div className="rounded-[12px] bg-[#f8fafc] border border-[#e2e8f0] p-4">
+      <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-1.5">Our commentary</div>
+      <p className="text-sm text-[#475569] leading-relaxed">{REPORT.commentary}</p>
+    </div>
+  </Panel>
+);
+
+const SearchBody = () => (
+  <Panel>
+    <SectionHeading num="03" title="Search Performance" score={REPORT.search.score} />
+    <DataTable headers={['Measure', 'Result', 'Status']}>
+      {REPORT.search.measures.map((m) => (
+        <tr key={m.measure} className="border-b border-[#f1f5f9] last:border-0">
+          <td className="py-2.5 px-1 font-medium text-[#0f172a]">{m.measure}</td>
+          <td className="py-2.5 px-1 text-[#475569] tabular-nums">{m.result}</td>
+          <td className="py-2.5 px-1 text-right"><StatusBadge status={m.status} /></td>
+        </tr>
+      ))}
+    </DataTable>
+    <p className="text-xs text-[#94a3b8] italic leading-relaxed">{REPORT.search.note}</p>
+    <div>
+      <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-2">Where the traffic comes from</div>
+      <div className="flex h-3 rounded-full overflow-hidden border border-[#e2e8f0]">
+        <div className="bg-[#0f172a]" style={{ width: `${REPORT.search.traffic.branded}%` }} />
+        <div className="bg-[#cbd5e1]" style={{ width: `${REPORT.search.traffic.nonBranded}%` }} />
+      </div>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-xs text-[#475569]">
+        <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#0f172a]" /> Branded {REPORT.search.traffic.branded}%</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1]" /> Non-branded {REPORT.search.traffic.nonBranded}% — visits from generic searches</span>
+      </div>
+    </div>
+    <div>
+      <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-2">Top ranking keywords</div>
+      <DataTable headers={['Keyword', 'Position', 'Type']}>
+        {REPORT.search.keywords.map((k) => (
+          <tr key={k.keyword} className="border-b border-[#f1f5f9] last:border-0">
+            <td className="py-2.5 px-1 font-medium text-[#0f172a]">{k.keyword}</td>
+            <td className="py-2.5 px-1 text-[#475569] tabular-nums">{k.position}</td>
+            <td className="py-2.5 px-1 text-right">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0]">{k.type}</span>
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+    </div>
+  </Panel>
+);
+
+const OnPageBody = () => (
+  <Panel>
+    <SectionHeading num="04" title="On-Page & Local Signals" score={REPORT.onpage.score} />
+    <DataTable headers={['Signal', 'Finding', 'Status']}>
+      {REPORT.onpage.signals.map((s) => (
+        <tr key={s.signal} className="border-b border-[#f1f5f9] last:border-0">
+          <td className="py-2.5 px-1 font-medium text-[#0f172a] whitespace-nowrap">{s.signal}</td>
+          <td className="py-2.5 px-1 text-[#475569]">{s.finding}</td>
+          <td className="py-2.5 px-1 text-right"><StatusBadge status={s.status} /></td>
+        </tr>
+      ))}
+    </DataTable>
+    <div className="rounded-[12px] bg-[#f0fdf4] border border-[#bbf7d0] p-4">
+      <div className="text-[10px] font-bold tracking-wider uppercase text-[#16a34a] mb-1.5">The bright spot</div>
+      <p className="text-sm text-[#166534] leading-relaxed">{REPORT.onpage.brightSpot}</p>
+    </div>
+  </Panel>
+);
+
+const LocalBody = () => (
+  <Panel>
+    <SectionHeading num="05" title="Local SEO" score={REPORT.local.score} />
+    <DataTable headers={['Signal', 'Finding', 'Status']}>
+      {REPORT.local.signals.map((s) => (
+        <tr key={s.signal} className="border-b border-[#f1f5f9] last:border-0">
+          <td className="py-2.5 px-1 font-medium text-[#0f172a] whitespace-nowrap">{s.signal}</td>
+          <td className="py-2.5 px-1 text-[#475569]">{s.finding}</td>
+          <td className="py-2.5 px-1 text-right"><StatusBadge status={s.status} /></td>
+        </tr>
+      ))}
+    </DataTable>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="rounded-[12px] bg-[#f8fafc] border border-[#e2e8f0] p-4">
+        <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-1.5">Who holds the local map pack today</div>
+        <p className="text-sm text-[#475569] leading-relaxed">{REPORT.local.mapPack}</p>
+      </div>
+      <div className="rounded-[12px] bg-[#f8fafc] border border-[#e2e8f0] p-4">
+        <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-1.5">The gateway</div>
+        <p className="text-sm text-[#475569] leading-relaxed">{REPORT.local.gateway}</p>
+      </div>
+    </div>
+  </Panel>
+);
+
+const PriorityBody = () => (
+  <Panel>
+    <SectionHeading num="06" title="Priority Fixes" />
+    <div className="space-y-3">
+      {REPORT.priorityFixes.map((p, idx) => (
+        <div key={idx} className="rounded-[12px] border border-[#e2e8f0] p-4">
+          <div className="flex items-start gap-3">
+            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${priorityStyle[p.priority]}`}>
+              {p.priority}
+            </span>
+            <div className="min-w-0 space-y-2">
+              <p className="text-sm font-semibold text-[#0f172a] leading-snug">{p.opportunity}</p>
+              <div className="flex items-start gap-1.5 text-sm text-[#475569] leading-relaxed">
+                <ChevronRight className="w-4 h-4 text-[#94a3b8] shrink-0 mt-0.5" />
+                <span>{p.action}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </Panel>
+);
+
+const WorkBody = () => (
+  <Panel>
+    <SectionHeading num="07" title="Work this period" />
+    <p className="text-sm text-[#475569]">{REPORT.work.summary}</p>
+    <div>
+      <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-2">
+        Open, and next ({REPORT.work.tasks.length})
+      </div>
+      <DataTable headers={['Lane', 'Task', 'Status', 'Date']}>
+        {REPORT.work.tasks.map((t, idx) => (
+          <tr key={idx} className="border-b border-[#f1f5f9] last:border-0">
+            <td className="py-2.5 px-1">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0]">{t.lane}</span>
+            </td>
+            <td className="py-2.5 px-1 font-medium text-[#0f172a]">{t.task}</td>
+            <td className="py-2.5 px-1 text-[#64748b]">{t.status}</td>
+            <td className="py-2.5 px-1 text-right text-[#94a3b8]">{t.date}</td>
+          </tr>
+        ))}
+      </DataTable>
+    </div>
+    <p className="text-xs text-[#94a3b8] italic leading-relaxed">{REPORT.work.footnote}</p>
+  </Panel>
+);
+
+/* ------------------------------------------------------------------ */
+/* Report detail (tabbed — one section at a time, minimal scrolling)   */
 /* ------------------------------------------------------------------ */
 
 const THEMES = ['Navy', 'Slate', 'Emerald', 'Client brand'];
 
-export const ReportsPage: React.FC = () => {
-  const [theme, setTheme] = useState('Slate');
+const TABS = [
+  { id: 'summary', label: 'Summary', badge: null as string | null, body: SummaryBody },
+  { id: 'technical', label: 'Technical & Speed', badge: '4/10', body: TechnicalBody },
+  { id: 'search', label: 'Search', badge: '8.5/10', body: SearchBody },
+  { id: 'onpage', label: 'On-Page & Local', badge: '6.5/10', body: OnPageBody },
+  { id: 'local', label: 'Local SEO', badge: '3/10', body: LocalBody },
+  { id: 'priority', label: 'Priority Fixes', badge: null, body: PriorityBody },
+  { id: 'work', label: 'Work', badge: null, body: WorkBody },
+];
 
-  const jumpTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+const ReportDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const [theme, setTheme] = useState('Slate');
+  const [activeTab, setActiveTab] = useState('summary');
+  const ActiveBody = TABS.find((t) => t.id === activeTab)?.body ?? SummaryBody;
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button className="inline-flex items-center gap-1.5 text-sm font-medium text-[#64748b] hover:text-[#0f172a] transition-colors">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#64748b] hover:text-[#0f172a] transition-colors"
+        >
           <ArrowLeft className="w-4 h-4" />
           Reports
         </button>
@@ -293,257 +507,127 @@ export const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Metadata strip */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 rounded-[10px] bg-[#f8fafc] border border-[#e2e8f0] text-xs text-[#64748b]">
-        <span className="font-semibold text-[#0f172a]">{REPORT.period}</span>
-        <span className="hidden sm:inline text-[#cbd5e1]">·</span>
-        <span>Created {REPORT.createdAt} by {REPORT.createdBy}</span>
-        <span className="hidden sm:inline text-[#cbd5e1]">·</span>
-        <span>numbers frozen at creation</span>
-        <span className="hidden sm:inline text-[#cbd5e1]">·</span>
-        <span>PDF generated {REPORT.pdfGenerated}</span>
-      </div>
-
-      {/* Cover banner */}
-      <div className="rounded-[16px] bg-[#0f172a] text-white p-6 sm:p-8 shadow-[0px_4px_16px_rgba(15,23,42,0.18)]">
-        <div className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#94a3b8] mb-3">
-          {REPORT.eyebrow}
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-1.5">{REPORT.client}</h1>
-        <a href={REPORT.url} className="text-sm text-[#cbd5e1] hover:text-white font-mono break-all">
-          {REPORT.url}
-        </a>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-5 mt-7 pt-6 border-t border-white/10">
-          <div>
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-1">Scope</div>
-            <div className="text-sm font-medium leading-snug">{REPORT.scope}</div>
+      {/* Cover banner — compact, with inline meta */}
+      <div className="rounded-[16px] bg-[#0f172a] text-white p-6 shadow-[0px_4px_16px_rgba(15,23,42,0.18)]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#94a3b8] mb-2">{REPORT.eyebrow}</div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1">{REPORT.client}</h1>
+            <a href={REPORT.url} className="text-sm text-[#cbd5e1] hover:text-white font-mono break-all">{REPORT.url}</a>
+            <div className="flex flex-wrap gap-x-5 gap-y-1 mt-4 text-xs text-[#cbd5e1]">
+              <span><span className="text-[#64748b]">Scope:</span> {REPORT.scope}</span>
+              <span><span className="text-[#64748b]">Period:</span> {REPORT.period}</span>
+            </div>
           </div>
-          <div>
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-1">Period</div>
-            <div className="text-sm font-medium leading-snug">{REPORT.period}</div>
-          </div>
-          <div className="col-span-2 sm:col-span-1 sm:text-right">
+          <div className="text-right shrink-0">
             <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-1">Overall</div>
             <div className="text-4xl font-bold tracking-tight leading-none">
-              {REPORT.overall}
-              <span className="text-xl text-[#94a3b8] font-semibold"> / 10</span>
+              {REPORT.overall}<span className="text-xl text-[#94a3b8] font-semibold"> / 10</span>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Jump to */}
-      <div className="flex flex-wrap items-center gap-2 px-4 py-3 rounded-[10px] bg-white border border-[#e2e8f0] shadow-[0px_1px_2px_rgba(0,0,0,0.02)]">
-        <span className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mr-1">Jump to</span>
-        {REPORT.sections.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => jumpTo(s.id)}
-            className="text-xs font-medium text-[#475569] hover:text-[#0f172a] hover:bg-[#f1f5f9] px-2 py-1 rounded-[6px] transition-colors"
-          >
-            {s.title}
-          </button>
-        ))}
-      </div>
-
-      {/* 01 Technical & Speed */}
-      <SectionCard id="technical" num="01" title="Technical & Speed" score={REPORT.technical.score}>
-        <DataTable headers={['Measure', 'Result', 'Status']}>
-          {REPORT.technical.measures.map((m) => (
-            <tr key={m.measure} className="border-b border-[#f1f5f9] last:border-0">
-              <td className="py-2.5 px-1 font-medium text-[#0f172a]">{m.measure}</td>
-              <td className="py-2.5 px-1 text-[#475569] tabular-nums">{m.result}</td>
-              <td className="py-2.5 px-1 text-right"><StatusBadge status={m.status} /></td>
-            </tr>
-          ))}
-        </DataTable>
-
-        <div>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-2">Issues & opportunities</div>
-          <DataTable headers={['Issue', 'Opportunity', 'Status']}>
-            {REPORT.technical.issues.map((i) => (
-              <tr key={i.issue} className="border-b border-[#f1f5f9] last:border-0">
-                <td className="py-2.5 px-1 font-medium text-[#0f172a]">{i.issue}</td>
-                <td className="py-2.5 px-1 text-[#475569]">{i.opportunity}</td>
-                <td className="py-2.5 px-1 text-right"><StatusBadge status={i.status} /></td>
-              </tr>
-            ))}
-          </DataTable>
+        <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-[#64748b]">
+          Created {REPORT.createdAt} by {REPORT.createdBy} · numbers frozen at creation · PDF generated {REPORT.pdfGenerated}
         </div>
-      </SectionCard>
+      </div>
 
-      {/* 02 Performance summary */}
-      <SectionCard id="performance" num="02" title="Performance summary">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {REPORT.highlights.map((h) => {
-            const Icon = h.icon;
+      {/* Tab bar */}
+      <div className="sticky top-16 z-10 -mx-1 px-1 py-1 bg-[#f8fafc]/90 backdrop-blur-sm">
+        <div className="flex items-center gap-1 overflow-x-auto rounded-[10px] border border-[#e2e8f0] bg-white p-1 shadow-[0px_1px_2px_rgba(0,0,0,0.02)]">
+          {TABS.map((t) => {
+            const active = activeTab === t.id;
             return (
-              <div key={h.label} className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-4">
-                <Icon className="w-4 h-4 text-[#94a3b8] mb-2" />
-                <div className="text-2xl font-bold text-[#0f172a] tracking-tight leading-none mb-1.5">{h.value}</div>
-                <div className="text-[11px] text-[#64748b] leading-snug">{h.label}</div>
-              </div>
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-[8px] text-xs font-medium transition-all ${
+                  active ? 'bg-[#0f172a] text-white font-semibold' : 'text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9]'
+                }`}
+              >
+                {t.label}
+                {t.badge && (
+                  <span className={`text-[10px] font-semibold tabular-nums ${active ? 'text-[#cbd5e1]' : 'text-[#94a3b8]'}`}>
+                    {t.badge}
+                  </span>
+                )}
+              </button>
             );
           })}
         </div>
+      </div>
 
-        <p className="text-sm text-[#475569] leading-relaxed">{REPORT.narrative}</p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {REPORT.breakdown.map((b) => (
-            <div key={b.num} className="flex items-center justify-between rounded-[12px] border border-[#e2e8f0] p-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono font-bold text-[#94a3b8]">{b.num}</span>
-                  <span className="text-sm font-semibold text-[#0f172a] truncate">{b.title}</span>
-                </div>
-                <div className="text-[11px] text-[#64748b] mt-0.5">{b.desc}</div>
-              </div>
-              <div className="text-right shrink-0 ml-3">
-                <div className={`text-[10px] font-bold uppercase tracking-wider ${verdictStyle[b.verdict]}`}>{b.verdict}</div>
-                <div className="text-sm font-bold text-[#0f172a] tabular-nums">{b.score}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="rounded-[12px] bg-[#f8fafc] border border-[#e2e8f0] p-4">
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-1.5">Our commentary</div>
-          <p className="text-sm text-[#475569] leading-relaxed">{REPORT.commentary}</p>
-        </div>
-      </SectionCard>
-
-      {/* 03 Search Performance */}
-      <SectionCard id="search" num="03" title="Search Performance" score={REPORT.search.score}>
-        <DataTable headers={['Measure', 'Result', 'Status']}>
-          {REPORT.search.measures.map((m) => (
-            <tr key={m.measure} className="border-b border-[#f1f5f9] last:border-0">
-              <td className="py-2.5 px-1 font-medium text-[#0f172a]">{m.measure}</td>
-              <td className="py-2.5 px-1 text-[#475569] tabular-nums">{m.result}</td>
-              <td className="py-2.5 px-1 text-right"><StatusBadge status={m.status} /></td>
-            </tr>
-          ))}
-        </DataTable>
-
-        <p className="text-xs text-[#94a3b8] italic leading-relaxed">{REPORT.search.note}</p>
-
-        <div>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-2">Where the traffic comes from</div>
-          <div className="flex h-3 rounded-full overflow-hidden border border-[#e2e8f0]">
-            <div className="bg-[#0f172a]" style={{ width: `${REPORT.search.traffic.branded}%` }} />
-            <div className="bg-[#cbd5e1]" style={{ width: `${REPORT.search.traffic.nonBranded}%` }} />
-          </div>
-          <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-xs text-[#475569]">
-            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#0f172a]" /> Branded {REPORT.search.traffic.branded}%</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#cbd5e1]" /> Non-branded {REPORT.search.traffic.nonBranded}% — visits from generic searches</span>
-          </div>
-        </div>
-
-        <div>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-2">Top ranking keywords</div>
-          <DataTable headers={['Keyword', 'Position', 'Type']}>
-            {REPORT.search.keywords.map((k) => (
-              <tr key={k.keyword} className="border-b border-[#f1f5f9] last:border-0">
-                <td className="py-2.5 px-1 font-medium text-[#0f172a]">{k.keyword}</td>
-                <td className="py-2.5 px-1 text-[#475569] tabular-nums">{k.position}</td>
-                <td className="py-2.5 px-1 text-right">
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0]">{k.type}</span>
-                </td>
-              </tr>
-            ))}
-          </DataTable>
-        </div>
-      </SectionCard>
-
-      {/* 04 On-Page & Local Signals */}
-      <SectionCard id="onpage" num="04" title="On-Page & Local Signals" score={REPORT.onpage.score}>
-        <DataTable headers={['Signal', 'Finding', 'Status']}>
-          {REPORT.onpage.signals.map((s) => (
-            <tr key={s.signal} className="border-b border-[#f1f5f9] last:border-0">
-              <td className="py-2.5 px-1 font-medium text-[#0f172a] whitespace-nowrap">{s.signal}</td>
-              <td className="py-2.5 px-1 text-[#475569]">{s.finding}</td>
-              <td className="py-2.5 px-1 text-right"><StatusBadge status={s.status} /></td>
-            </tr>
-          ))}
-        </DataTable>
-        <div className="rounded-[12px] bg-[#f0fdf4] border border-[#bbf7d0] p-4">
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[#16a34a] mb-1.5">The bright spot</div>
-          <p className="text-sm text-[#166534] leading-relaxed">{REPORT.onpage.brightSpot}</p>
-        </div>
-      </SectionCard>
-
-      {/* 05 Local SEO */}
-      <SectionCard id="local" num="05" title="Local SEO" score={REPORT.local.score}>
-        <DataTable headers={['Signal', 'Finding', 'Status']}>
-          {REPORT.local.signals.map((s) => (
-            <tr key={s.signal} className="border-b border-[#f1f5f9] last:border-0">
-              <td className="py-2.5 px-1 font-medium text-[#0f172a] whitespace-nowrap">{s.signal}</td>
-              <td className="py-2.5 px-1 text-[#475569]">{s.finding}</td>
-              <td className="py-2.5 px-1 text-right"><StatusBadge status={s.status} /></td>
-            </tr>
-          ))}
-        </DataTable>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="rounded-[12px] bg-[#f8fafc] border border-[#e2e8f0] p-4">
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-1.5">Who holds the local map pack today</div>
-            <p className="text-sm text-[#475569] leading-relaxed">{REPORT.local.mapPack}</p>
-          </div>
-          <div className="rounded-[12px] bg-[#f8fafc] border border-[#e2e8f0] p-4">
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-1.5">The gateway</div>
-            <p className="text-sm text-[#475569] leading-relaxed">{REPORT.local.gateway}</p>
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* 06 Priority Fixes */}
-      <SectionCard id="priority" num="06" title="Priority Fixes">
-        <div className="space-y-3">
-          {REPORT.priorityFixes.map((p, idx) => (
-            <div key={idx} className="rounded-[12px] border border-[#e2e8f0] p-4">
-              <div className="flex items-start gap-3">
-                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${priorityStyle[p.priority]}`}>
-                  {p.priority}
-                </span>
-                <div className="min-w-0 space-y-2">
-                  <p className="text-sm font-semibold text-[#0f172a] leading-snug">{p.opportunity}</p>
-                  <div className="flex items-start gap-1.5 text-sm text-[#475569] leading-relaxed">
-                    <ChevronRight className="w-4 h-4 text-[#94a3b8] shrink-0 mt-0.5" />
-                    <span>{p.action}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-
-      {/* 07 Work this period */}
-      <SectionCard id="work" num="07" title="Work this period">
-        <p className="text-sm text-[#475569]">{REPORT.work.summary}</p>
-        <div>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[#94a3b8] mb-2">
-            Open, and next ({REPORT.work.tasks.length})
-          </div>
-          <DataTable headers={['Lane', 'Task', 'Status', 'Date']}>
-            {REPORT.work.tasks.map((t, idx) => (
-              <tr key={idx} className="border-b border-[#f1f5f9] last:border-0">
-                <td className="py-2.5 px-1">
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0]">{t.lane}</span>
-                </td>
-                <td className="py-2.5 px-1 font-medium text-[#0f172a]">{t.task}</td>
-                <td className="py-2.5 px-1 text-[#64748b]">{t.status}</td>
-                <td className="py-2.5 px-1 text-right text-[#94a3b8]">{t.date}</td>
-              </tr>
-            ))}
-          </DataTable>
-        </div>
-        <p className="text-xs text-[#94a3b8] italic leading-relaxed">{REPORT.work.footnote}</p>
-      </SectionCard>
+      {/* Active section */}
+      <ActiveBody />
 
       <div className="text-center text-xs text-[#94a3b8] py-2">
         {REPORT.client} · SEO &amp; Local Search Audit
       </div>
     </div>
   );
+};
+
+/* ------------------------------------------------------------------ */
+/* Reports list (default view)                                         */
+/* ------------------------------------------------------------------ */
+
+const ReportsList: React.FC<{ onOpen: (id: string) => void }> = ({ onOpen }) => (
+  <div className="max-w-4xl mx-auto">
+    <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+      <div>
+        <h1 className="text-xl font-bold text-[#0f172a] tracking-tight">Reports</h1>
+        <p className="text-sm text-[#64748b] mt-0.5">{REPORTS_LIST.length} reports produced for this client</p>
+      </div>
+      <button className="inline-flex items-center gap-2 px-4 py-2 rounded-[10px] bg-[#0f172a] hover:bg-[#1e293b] text-white text-sm font-semibold transition-colors shadow-xs">
+        <Plus className="w-4 h-4" />
+        Create new report
+      </button>
+    </div>
+
+    <div className="bg-white border border-[#e2e8f0] rounded-[14px] shadow-[0px_1px_3px_rgba(0,0,0,0.04)] divide-y divide-[#f1f5f9] overflow-hidden">
+      {REPORTS_LIST.map((r) => (
+        <div
+          key={r.id}
+          onClick={() => onOpen(r.id)}
+          className="group flex items-center justify-between gap-3 px-5 py-4 cursor-pointer hover:bg-[#f8fafc] transition-colors"
+        >
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-[#0f172a] group-hover:text-[#0f172a]">{r.name}</div>
+            <div className="text-xs text-[#64748b] mt-0.5">
+              {r.period} · {r.author} · {r.created}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="p-1.5 rounded-[6px] text-[#94a3b8] hover:text-[#0f172a] hover:bg-[#f1f5f9] transition-colors"
+              title="Duplicate report"
+            >
+              <Copy className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="p-1.5 rounded-[6px] text-[#94a3b8] hover:text-[#dc2626] hover:bg-[#fef2f2] transition-colors"
+              title="Delete report"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <ChevronRight className="w-4 h-4 text-[#cbd5e1] group-hover:text-[#0f172a] group-hover:translate-x-0.5 transition-all ml-0.5" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
+/* Page — switches between list and detail                             */
+/* ------------------------------------------------------------------ */
+
+export const ReportsPage: React.FC = () => {
+  const [openReportId, setOpenReportId] = useState<string | null>(null);
+
+  if (openReportId) {
+    return <ReportDetail onBack={() => setOpenReportId(null)} />;
+  }
+  return <ReportsList onOpen={setOpenReportId} />;
 };
