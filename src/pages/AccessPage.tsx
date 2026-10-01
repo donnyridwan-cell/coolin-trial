@@ -74,13 +74,15 @@ export const AccessPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Staff info callout */}
+      {/* Info callout — count reflects who is scoped below */}
       <div className="flex items-start gap-2.5 p-4 rounded-[12px] bg-[#f8fafc] border border-[#e2e8f0]">
         <Info className="w-4 h-4 text-[#94a3b8] shrink-0 mt-0.5" />
         <p className="text-xs text-[#475569] leading-relaxed">
-          <span className="font-semibold text-[#0f172a]">0 staff members see this client already</span>{' '}
-          and are not listed below — staff see every client, and nothing here changes that. The list is
-          only the people who see it <em>because</em> of this table.
+          <span className="font-semibold text-[#0f172a]">
+            {scoped.length} {scoped.length === 1 ? 'person sees' : 'people see'} this client
+          </span>{' '}
+          <em>because</em> of this table. This is on top of staff, who see every client and are not
+          listed below — nothing here changes staff access.
         </p>
       </div>
 
