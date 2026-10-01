@@ -14,7 +14,9 @@ export type MenuId =
   | 'connections'
   | 'notifications'
   | 'images-graphics'
-  | 'videos';
+  | 'videos'
+  | 'access'
+  | 'billing';
 
 export interface MenuGroup {
   groupName?: string;

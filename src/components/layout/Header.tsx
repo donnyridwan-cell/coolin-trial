@@ -92,6 +92,16 @@ const MENU_TITLES: Record<
     subtitle: 'Video Ad Creatives & Video Content',
     countBadge: 'Media',
   },
+  access: {
+    title: 'Access',
+    subtitle: 'Team Members, Roles & Access Permissions',
+    countBadge: 'Others',
+  },
+  billing: {
+    title: 'Billing',
+    subtitle: 'Subscription Plan, Invoices & Payment Methods',
+    countBadge: 'Others',
+  },
 };
 
 export const Header: React.FC<HeaderProps> = ({

@@ -22,6 +22,8 @@ import { ConnectionsPage } from './pages/ConnectionsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { ImagesGraphicsPage } from './pages/ImagesGraphicsPage';
 import { VideosPage } from './pages/VideosPage';
+import { AccessPage } from './pages/AccessPage';
+import { BillingPage } from './pages/BillingPage';
 
 export function App() {
   const [currentMenu, setCurrentMenu] = useState<MenuId>('overview');
@@ -183,6 +185,10 @@ export function App() {
           {currentMenu === 'images-graphics' && <ImagesGraphicsPage />}
 
           {currentMenu === 'videos' && <VideosPage />}
+
+          {currentMenu === 'access' && <AccessPage />}
+
+          {currentMenu === 'billing' && <BillingPage />}
         </main>
       </div>
 

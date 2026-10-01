@@ -16,6 +16,8 @@ import {
   Bell,
   Image,
   Video,
+  KeyRound,
+  CreditCard,
   ChevronRight,
   Shield,
   Search as SearchIcon,
@@ -183,6 +185,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'videos',
           label: 'VIDEOS',
           icon: Video,
+          hasContent: false,
+        },
+      ],
+    },
+    {
+      title: 'OTHERS',
+      items: [
+        {
+          id: 'access',
+          label: 'ACCESS',
+          icon: KeyRound,
+          hasContent: false,
+        },
+        {
+          id: 'billing',
+          label: 'BILLING',
+          icon: CreditCard,
           hasContent: false,
         },
       ],
