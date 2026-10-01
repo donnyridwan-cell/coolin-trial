@@ -23,3 +23,21 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Print: show only the report, hide app chrome and interactive-only bits */
+@media print {
+  aside,
+  header,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  body {
+    background: #ffffff !important;
+  }
+  .print-full {
+    display: block !important;
+  }
+}

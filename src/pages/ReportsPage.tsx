@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
 import {
   ArrowLeft,
   Plus,
@@ -17,6 +18,8 @@ import {
   AlertTriangle,
   XCircle,
   MinusCircle,
+  Check,
+  X,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -447,8 +450,6 @@ const WorkBody = () => (
 /* Report detail (tabbed — one section at a time, minimal scrolling)   */
 /* ------------------------------------------------------------------ */
 
-const THEMES = ['Navy', 'Slate', 'Emerald', 'Client brand'];
-
 const TABS = [
   { id: 'summary', label: 'Summary', badge: null as string | null, body: SummaryBody },
   { id: 'technical', label: 'Technical & Speed', badge: '4/10', body: TechnicalBody },
@@ -459,15 +460,208 @@ const TABS = [
   { id: 'work', label: 'Work', badge: null, body: WorkBody },
 ];
 
+/* Build a real, text-based PDF of the report (only the sections passed in). */
+function downloadReportPdf(includeIds: string[]) {
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const M = 42;
+  const maxW = pageW - M * 2;
+  let y = M;
+
+  const ensure = (need = 16) => {
+    if (y + need > pageH - M) {
+      doc.addPage();
+      y = M;
+    }
+  };
+  const setFont = (size: number, style = 'normal', rgb: [number, number, number] = [15, 23, 42]) => {
+    doc.setFontSize(size);
+    doc.setFont('helvetica', style);
+    doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+  };
+  const line = (s: string, size = 10, style = 'normal', rgb: [number, number, number] = [15, 23, 42], gap = 15) => {
+    setFont(size, style, rgb);
+    doc.splitTextToSize(s, maxW).forEach((ln: string) => {
+      ensure(gap);
+      doc.text(ln, M, y);
+      y += gap;
+    });
+  };
+  const row = (left: string, right: string) => {
+    ensure(16);
+    setFont(10, 'normal', [71, 85, 105]);
+    const rightW = doc.getTextWidth(right);
+    doc.splitTextToSize(left, maxW - rightW - 12).forEach((ln: string, i: number) => {
+      ensure(15);
+      if (i === 0) {
+        setFont(10, 'bold', [15, 23, 42]);
+        doc.text(ln, M, y);
+      } else {
+        setFont(10, 'normal', [71, 85, 105]);
+        doc.text(ln, M, y);
+      }
+      y += 15;
+    });
+    setFont(9, 'normal', [100, 116, 139]);
+    doc.text(right, pageW - M, y - 15, { align: 'right' });
+  };
+  const heading = (num: string, title: string, score?: number) => {
+    y += 8;
+    ensure(22);
+    setFont(12, 'bold', [15, 23, 42]);
+    doc.text(`${num}  ${title}`, M, y);
+    if (score !== undefined) {
+      setFont(12, 'bold', [15, 23, 42]);
+      doc.text(`${score}/10`, pageW - M, y, { align: 'right' });
+    }
+    y += 8;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(M, y, pageW - M, y);
+    y += 14;
+  };
+
+  // Header band
+  setFont(9, 'bold', [100, 116, 139]);
+  doc.text(REPORT.eyebrow.toUpperCase(), M, y);
+  doc.setFontSize(22);
+  setFont(22, 'bold', [15, 23, 42]);
+  doc.text(`${REPORT.overall} / 10`, pageW - M, y + 2, { align: 'right' });
+  y += 24;
+  line(REPORT.client, 20, 'bold', [15, 23, 42], 24);
+  line(REPORT.url, 9, 'normal', [100, 116, 139], 14);
+  y += 2;
+  line(`Scope: ${REPORT.scope}`, 9, 'normal', [71, 85, 105], 13);
+  line(`Period: ${REPORT.period}`, 9, 'normal', [71, 85, 105], 13);
+  line(
+    `Created ${REPORT.createdAt} by ${REPORT.createdBy} · numbers frozen at creation · PDF generated ${REPORT.pdfGenerated}`,
+    8,
+    'normal',
+    [148, 163, 184],
+    13
+  );
+  y += 4;
+
+  const has = (id: string) => includeIds.includes(id);
+
+  if (has('summary')) {
+    heading('02', 'Performance summary');
+    REPORT.highlights.forEach((h) => row(h.label, h.value));
+    y += 4;
+    line(REPORT.narrative, 10, 'normal', [71, 85, 105], 14);
+    y += 4;
+    REPORT.breakdown.forEach((b) => row(`${b.num}  ${b.title} — ${b.desc}`, `${b.verdict} ${b.score}`));
+    y += 4;
+    line('Our commentary', 8, 'bold', [148, 163, 184], 13);
+    line(REPORT.commentary, 10, 'normal', [71, 85, 105], 14);
+  }
+  if (has('technical')) {
+    heading('01', 'Technical & Speed', REPORT.technical.score);
+    REPORT.technical.measures.forEach((m) => row(m.measure, `${m.result}  ·  ${m.status}`));
+    y += 4;
+    line('Issues & opportunities', 8, 'bold', [148, 163, 184], 13);
+    REPORT.technical.issues.forEach((i) => row(i.issue, `${i.opportunity}  ·  ${i.status}`));
+  }
+  if (has('search')) {
+    heading('03', 'Search Performance', REPORT.search.score);
+    REPORT.search.measures.forEach((m) => row(m.measure, `${m.result}  ·  ${m.status}`));
+    y += 4;
+    line(REPORT.search.note, 8, 'italic', [148, 163, 184], 12);
+    y += 2;
+    row('Branded', `${REPORT.search.traffic.branded}%`);
+    row('Non-branded', `${REPORT.search.traffic.nonBranded}%`);
+    y += 4;
+    line('Top ranking keywords', 8, 'bold', [148, 163, 184], 13);
+    REPORT.search.keywords.forEach((k) => row(k.keyword, `#${k.position}  ·  ${k.type}`));
+  }
+  if (has('onpage')) {
+    heading('04', 'On-Page & Local Signals', REPORT.onpage.score);
+    REPORT.onpage.signals.forEach((s) => row(s.signal, `${s.finding}  ·  ${s.status}`));
+    y += 4;
+    line('The bright spot', 8, 'bold', [22, 163, 74], 13);
+    line(REPORT.onpage.brightSpot, 10, 'normal', [71, 85, 105], 14);
+  }
+  if (has('local')) {
+    heading('05', 'Local SEO', REPORT.local.score);
+    REPORT.local.signals.forEach((s) => row(s.signal, `${s.finding}  ·  ${s.status}`));
+    y += 4;
+    line('Who holds the local map pack today', 8, 'bold', [148, 163, 184], 13);
+    line(REPORT.local.mapPack, 10, 'normal', [71, 85, 105], 14);
+    line('The gateway', 8, 'bold', [148, 163, 184], 13);
+    line(REPORT.local.gateway, 10, 'normal', [71, 85, 105], 14);
+  }
+  if (has('priority')) {
+    heading('06', 'Priority Fixes');
+    REPORT.priorityFixes.forEach((p) => {
+      line(`[${p.priority}] ${p.opportunity}`, 10, 'bold', [15, 23, 42], 14);
+      line(`→ ${p.action}`, 10, 'normal', [71, 85, 105], 14);
+      y += 4;
+    });
+  }
+  if (has('work')) {
+    heading('07', 'Work this period');
+    line(REPORT.work.summary, 10, 'normal', [71, 85, 105], 14);
+    y += 2;
+    REPORT.work.tasks.forEach((t) => row(`${t.lane} · ${t.task}`, `${t.status}  ·  ${t.date}`));
+    y += 4;
+    line(REPORT.work.footnote, 8, 'italic', [148, 163, 184], 12);
+  }
+
+  doc.save(`${REPORT.client} - SEO report (${REPORT.period}).pdf`);
+}
+
+/* Open the user's mail app with a pre-filled draft summarising the report. */
+function draftReportEmail() {
+  const subject = `${REPORT.client} — ${REPORT.eyebrow} (${REPORT.period})`;
+  const body = [
+    `Hi,`,
+    ``,
+    `Please find the ${REPORT.eyebrow.toLowerCase()} for ${REPORT.client}, covering ${REPORT.period}.`,
+    ``,
+    `Overall score: ${REPORT.overall}/10`,
+    `• Technical & Speed: ${REPORT.technical.score}/10`,
+    `• Search Performance: ${REPORT.search.score}/10`,
+    `• On-Page & Local Signals: ${REPORT.onpage.score}/10`,
+    `• Local SEO: ${REPORT.local.score}/10`,
+    ``,
+    `Top priority this period: ${REPORT.priorityFixes[0].opportunity}`,
+    ``,
+    `Report URL: ${REPORT.url}`,
+    ``,
+    `Best regards,`,
+  ].join('\n');
+  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 const ReportDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [theme, setTheme] = useState('Slate');
   const [activeTab, setActiveTab] = useState('summary');
-  const ActiveBody = TABS.find((t) => t.id === activeTab)?.body ?? SummaryBody;
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [showCustomise, setShowCustomise] = useState(false);
+
+  const visibleTabs = TABS.filter((t) => !hidden.has(t.id));
+
+  // Keep the active tab valid when sections are hidden.
+  useEffect(() => {
+    if (hidden.has(activeTab) && visibleTabs.length > 0) {
+      setActiveTab(visibleTabs[0].id);
+    }
+  }, [hidden, activeTab, visibleTabs]);
+
+  const toggleSection = (id: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toolbarBtn =
+    'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-white hover:bg-[#f8fafc] border border-[#e2e8f0] text-xs font-medium text-[#475569] hover:text-[#0f172a] transition-colors shadow-[0px_1px_2px_rgba(0,0,0,0.02)]';
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={onBack}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-[#64748b] hover:text-[#0f172a] transition-colors"
@@ -477,35 +671,73 @@ const ReportDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </button>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center bg-[#f1f5f9] p-1 rounded-[8px] border border-[#e2e8f0]">
-            {THEMES.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTheme(t)}
-                className={`px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all ${
-                  theme === t ? 'bg-white text-[#0f172a] font-semibold shadow-xs' : 'text-[#64748b] hover:text-[#0f172a]'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          {[
-            { icon: SlidersHorizontal, label: 'Customise' },
-            { icon: Mail, label: 'Draft in email' },
-            { icon: Printer, label: 'Print as PDF' },
-            { icon: Download, label: 'Download PDF' },
-          ].map(({ icon: Icon, label }) => (
-            <button
-              key={label}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-white hover:bg-[#f8fafc] border border-[#e2e8f0] text-xs font-medium text-[#475569] hover:text-[#0f172a] transition-colors shadow-[0px_1px_2px_rgba(0,0,0,0.02)]"
-            >
-              <Icon className="w-3.5 h-3.5 text-[#94a3b8]" />
-              {label}
-            </button>
-          ))}
+          <button
+            onClick={() => setShowCustomise((v) => !v)}
+            className={`${toolbarBtn} ${showCustomise ? 'bg-[#f1f5f9] text-[#0f172a] border-[#cbd5e1]' : ''}`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#94a3b8]" />
+            Customise
+          </button>
+          <button onClick={draftReportEmail} className={toolbarBtn}>
+            <Mail className="w-3.5 h-3.5 text-[#94a3b8]" />
+            Draft in email
+          </button>
+          <button onClick={() => window.print()} className={toolbarBtn}>
+            <Printer className="w-3.5 h-3.5 text-[#94a3b8]" />
+            Print as PDF
+          </button>
+          <button
+            onClick={() => downloadReportPdf(visibleTabs.map((t) => t.id))}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-[#1e293b] text-white text-xs font-semibold transition-colors shadow-xs"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Download PDF
+          </button>
         </div>
       </div>
+
+      {/* Customise panel */}
+      {showCustomise && (
+        <div className="no-print rounded-[12px] border border-[#e2e8f0] bg-white p-4 shadow-[0px_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-sm font-semibold text-[#0f172a]">Customise report</div>
+              <div className="text-xs text-[#64748b] mt-0.5">Choose which sections appear in the report, print and PDF.</div>
+            </div>
+            <button
+              onClick={() => setShowCustomise(false)}
+              className="p-1.5 rounded-[6px] text-[#94a3b8] hover:text-[#0f172a] hover:bg-[#f1f5f9] transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {TABS.map((t) => {
+              const on = !hidden.has(t.id);
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => toggleSection(t.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-[8px] border text-xs font-medium text-left transition-colors ${
+                    on
+                      ? 'border-[#cbd5e1] bg-[#f8fafc] text-[#0f172a]'
+                      : 'border-[#e2e8f0] bg-white text-[#94a3b8]'
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-[5px] border flex items-center justify-center shrink-0 ${
+                      on ? 'bg-[#0f172a] border-[#0f172a]' : 'border-[#cbd5e1]'
+                    }`}
+                  >
+                    {on && <Check className="w-3 h-3 text-white" />}
+                  </span>
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Cover banner — compact, with inline meta */}
       <div className="rounded-[16px] bg-[#0f172a] text-white p-6 shadow-[0px_4px_16px_rgba(15,23,42,0.18)]">
@@ -532,9 +764,9 @@ const ReportDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       {/* Tab bar */}
-      <div className="sticky top-16 z-10 -mx-1 px-1 py-1 bg-[#f8fafc]/90 backdrop-blur-sm">
+      <div className="no-print sticky top-16 z-10 -mx-1 px-1 py-1 bg-[#f8fafc]/90 backdrop-blur-sm">
         <div className="flex items-center gap-1 overflow-x-auto rounded-[10px] border border-[#e2e8f0] bg-white p-1 shadow-[0px_1px_2px_rgba(0,0,0,0.02)]">
-          {TABS.map((t) => {
+          {visibleTabs.map((t) => {
             const active = activeTab === t.id;
             return (
               <button
@@ -556,8 +788,17 @@ const ReportDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Active section */}
-      <ActiveBody />
+      {/* Sections — on screen only the active one shows; on print all visible ones show */}
+      {TABS.map((t) => {
+        if (hidden.has(t.id)) return null;
+        const Body = t.body;
+        const isActive = activeTab === t.id;
+        return (
+          <div key={t.id} className={`${isActive ? 'block' : 'hidden'} print:block print:mb-5`}>
+            <Body />
+          </div>
+        );
+      })}
 
       <div className="text-center text-xs text-[#94a3b8] py-2">
         {REPORT.client} · SEO &amp; Local Search Audit
