@@ -122,8 +122,8 @@ export const WebsitePage: React.FC = () => {
         </button>
       </div>
 
-      {/* SECTION 1: GA4 TOP PAGES (From PDF Page 1 & 2) */}
-      {(activeTab === 'ga4' || activeTab === 'pagespeed') && (
+      {/* SECTION 1: GA4 TOP PAGES (banner, metric summary cards & table — GA4 tab only) */}
+      {activeTab === 'ga4' && (
         <div className="space-y-5">
           {/* Header Info Banner */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[12px] bg-white border border-[#e2e8f0] text-xs shadow-[0px_1px_3px_rgba(0,0,0,0.04)]">
@@ -297,8 +297,8 @@ export const WebsitePage: React.FC = () => {
         </div>
       )}
 
-      {/* SECTION 2: PAGESPEED INSIGHTS (From PDF Page 2) */}
-      {(activeTab === 'pagespeed' || activeTab === 'ga4') && (
+      {/* SECTION 2: PAGESPEED INSIGHTS (PageSpeed tab only) */}
+      {activeTab === 'pagespeed' && (
         <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between p-4 rounded-[12px] bg-white border border-[#e2e8f0] shadow-[0px_1px_3px_rgba(0,0,0,0.04)]">
             <div>
@@ -424,8 +424,8 @@ export const WebsitePage: React.FC = () => {
         </div>
       )}
 
-      {/* SECTION 3: TRACKED PAGES (From PDF Page 2) */}
-      {(activeTab === 'tracked' || activeTab === 'pagespeed') && (
+      {/* SECTION 3: TRACKED PAGES (Tracked Pages tab only) */}
+      {activeTab === 'tracked' && (
         <div className="space-y-4 pt-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[12px] bg-white border border-[#e2e8f0] shadow-[0px_1px_3px_rgba(0,0,0,0.04)]">
             <div>

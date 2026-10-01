@@ -112,7 +112,7 @@ export const SearchMarketingPage: React.FC<SearchMarketingPageProps> = ({ onNavi
       {activeSubTab === 'keywords' && (
         <div className="space-y-5">
           {/* GSC Queries Header bar from PDF Page 2 */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[12px] bg-white border border-[#e2e8f0] text-xs shadow-[0px_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:min-h-[62px] rounded-[12px] bg-white border border-[#e2e8f0] text-xs shadow-[0px_1px_3px_rgba(0,0,0,0.04)]">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-bold text-[#0f172a] uppercase tracking-wide">GSC — SEARCH QUERIES</span>
               <span className="text-[#cbd5e1]">|</span>
@@ -253,7 +253,7 @@ export const SearchMarketingPage: React.FC<SearchMarketingPageProps> = ({ onNavi
       {activeSubTab === 'crawl-summary' && (
         <div className="space-y-5">
           {/* Header Info Banner */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[12px] bg-white border border-[#e2e8f0] text-xs shadow-[0px_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:min-h-[62px] rounded-[12px] bg-white border border-[#e2e8f0] text-xs shadow-[0px_1px_3px_rgba(0,0,0,0.04)]">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-bold text-[#0f172a] uppercase tracking-wide">
                 SCREAMING FROG — SITE AUDIT
