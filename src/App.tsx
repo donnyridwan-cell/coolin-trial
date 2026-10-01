@@ -14,7 +14,7 @@ import { SocialMediaPage } from './pages/SocialMediaPage';
 import { EmailMarketingPage } from './pages/EmailMarketingPage';
 import { CroPage } from './pages/CroPage';
 import { StrategiesPage } from './pages/StrategiesPage';
-import { ReportsPage } from './pages/ReportsPage';
+import { ReportsPage, INITIAL_REPORTS } from './pages/ReportsPage';
 import { BrandBriefPage } from './pages/BrandBriefPage';
 import { ActionableItemsPage } from './pages/ActionableItemsPage';
 import { TaskDatabasePage } from './pages/TaskDatabasePage';
@@ -28,6 +28,7 @@ import { BillingPage } from './pages/BillingPage';
 export function App() {
   const [currentMenu, setCurrentMenu] = useState<MenuId>('overview');
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
+  const [reports, setReports] = useState(INITIAL_REPORTS);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isAuditing, setIsAuditing] = useState(false);
@@ -94,6 +95,7 @@ export function App() {
         currentMenu={currentMenu}
         onSelectMenu={(menu) => setCurrentMenu(menu)}
         taskCount={tasks.length}
+        reportCount={reports.length}
         actionableCount={actionableCount}
         isOpenMobile={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
@@ -158,7 +160,9 @@ export function App() {
 
           {currentMenu === 'strategies' && <StrategiesPage />}
 
-          {currentMenu === 'reports' && <ReportsPage />}
+          {currentMenu === 'reports' && (
+            <ReportsPage reports={reports} setReports={setReports} />
+          )}
 
           {currentMenu === 'brand-brief' && <BrandBriefPage />}
 

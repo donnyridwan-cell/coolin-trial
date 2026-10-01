@@ -31,6 +31,7 @@ interface SidebarProps {
   currentMenu: MenuId;
   onSelectMenu: (menu: MenuId) => void;
   taskCount: number;
+  reportCount: number;
   actionableCount: number;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
@@ -52,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentMenu,
   onSelectMenu,
   taskCount,
+  reportCount,
   actionableCount,
   isOpenMobile,
   onCloseMobile,
@@ -125,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: 'REPORTS',
           icon: FileBarChart2,
           hasContent: true,
-          badge: 3,
+          badge: reportCount > 0 ? reportCount : undefined,
         },
       ],
     },

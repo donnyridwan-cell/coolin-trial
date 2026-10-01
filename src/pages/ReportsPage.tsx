@@ -153,7 +153,15 @@ const REPORT = {
 };
 
 // List of reports produced for this client (opens the detail view above).
-const REPORTS_LIST = [
+export interface ReportSummary {
+  id: string;
+  name: string;
+  period: string;
+  author: string;
+  created: string;
+}
+
+export const INITIAL_REPORTS: ReportSummary[] = [
   { id: 'r1', name: 'July 2026', period: 'Jul 1, 2026 – Jul 31, 2026', author: 'Admin LMS', created: 'Aug 18, 2026' },
   { id: 'r2', name: 'June 2026', period: 'Jun 1, 2026 – Jun 30, 2026', author: 'Admin LMS', created: 'Jul 14, 2026' },
   { id: 'r3', name: 'Q2 2026 Summary', period: 'Apr 1, 2026 – Jun 30, 2026', author: 'Admin LMS', created: 'Jul 8, 2026' },
@@ -811,64 +819,247 @@ const ReportDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 /* Reports list (default view)                                         */
 /* ------------------------------------------------------------------ */
 
-const ReportsList: React.FC<{ onOpen: (id: string) => void }> = ({ onOpen }) => (
-  <div className="max-w-4xl mx-auto">
-    <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
-      <div>
-        <h1 className="text-xl font-bold text-[#0f172a] tracking-tight">Reports</h1>
-        <p className="text-sm text-[#64748b] mt-0.5">{REPORTS_LIST.length} reports produced for this client</p>
-      </div>
-      <button className="inline-flex items-center gap-2 px-4 py-2 rounded-[10px] bg-[#0f172a] hover:bg-[#1e293b] text-white text-sm font-semibold transition-colors shadow-xs">
-        <Plus className="w-4 h-4" />
-        Create new report
-      </button>
-    </div>
+const formatToday = () =>
+  new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-    <div className="bg-white border border-[#e2e8f0] rounded-[14px] shadow-[0px_1px_3px_rgba(0,0,0,0.04)] divide-y divide-[#f1f5f9] overflow-hidden">
-      {REPORTS_LIST.map((r) => (
-        <div
-          key={r.id}
-          onClick={() => onOpen(r.id)}
-          className="group flex items-center justify-between gap-3 px-5 py-4 cursor-pointer hover:bg-[#f8fafc] transition-colors"
+interface ReportsListProps {
+  reports: ReportSummary[];
+  onOpen: (id: string) => void;
+  onCreate: (name: string, period: string) => void;
+  onDuplicate: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+const ReportsList: React.FC<ReportsListProps> = ({ reports, onOpen, onCreate, onDuplicate, onDelete }) => {
+  const [showCreate, setShowCreate] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [period, setPeriod] = useState('');
+
+  const openCreate = () => {
+    const now = new Date();
+    setName(now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
+    setPeriod('');
+    setShowCreate(true);
+  };
+
+  const submitCreate = () => {
+    if (!name.trim()) return;
+    onCreate(name.trim(), period.trim() || 'Period not set');
+    setShowCreate(false);
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+        <div>
+          <h1 className="text-xl font-bold text-[#0f172a] tracking-tight">Reports</h1>
+          <p className="text-sm text-[#64748b] mt-0.5">
+            {reports.length} {reports.length === 1 ? 'report' : 'reports'} produced for this client
+          </p>
+        </div>
+        <button
+          onClick={openCreate}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-[10px] bg-[#0f172a] hover:bg-[#1e293b] text-white text-sm font-semibold transition-colors shadow-xs"
         >
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-[#0f172a] group-hover:text-[#0f172a]">{r.name}</div>
-            <div className="text-xs text-[#64748b] mt-0.5">
-              {r.period} · {r.author} · {r.created}
+          <Plus className="w-4 h-4" />
+          Create new report
+        </button>
+      </div>
+
+      {reports.length === 0 ? (
+        <div className="bg-white border border-dashed border-[#cbd5e1] rounded-[14px] p-10 text-center">
+          <div className="text-sm font-semibold text-[#0f172a]">No reports yet</div>
+          <div className="text-xs text-[#64748b] mt-1 mb-4">Create your first report for this client.</div>
+          <button
+            onClick={openCreate}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[10px] bg-[#0f172a] hover:bg-[#1e293b] text-white text-sm font-semibold transition-colors shadow-xs"
+          >
+            <Plus className="w-4 h-4" />
+            Create new report
+          </button>
+        </div>
+      ) : (
+        <div className="bg-white border border-[#e2e8f0] rounded-[14px] shadow-[0px_1px_3px_rgba(0,0,0,0.04)] divide-y divide-[#f1f5f9] overflow-hidden">
+          {reports.map((r) => (
+            <div
+              key={r.id}
+              onClick={() => onOpen(r.id)}
+              className="group flex items-center justify-between gap-3 px-5 py-4 cursor-pointer hover:bg-[#f8fafc] transition-colors"
+            >
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-[#0f172a]">{r.name}</div>
+                <div className="text-xs text-[#64748b] mt-0.5">
+                  {r.period} · {r.author} · {r.created}
+                </div>
+              </div>
+
+              {confirmId === r.id ? (
+                <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-xs text-[#64748b]">Delete?</span>
+                  <button
+                    onClick={() => {
+                      onDelete(r.id);
+                      setConfirmId(null);
+                    }}
+                    className="px-2.5 py-1 rounded-[6px] bg-[#dc2626] hover:bg-[#b91c1c] text-white text-xs font-semibold transition-colors"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => setConfirmId(null)}
+                    className="px-2.5 py-1 rounded-[6px] bg-white border border-[#e2e8f0] text-[#475569] hover:text-[#0f172a] text-xs font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicate(r.id);
+                    }}
+                    className="p-1.5 rounded-[6px] text-[#94a3b8] hover:text-[#0f172a] hover:bg-[#f1f5f9] transition-colors"
+                    title="Duplicate report"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmId(r.id);
+                    }}
+                    className="p-1.5 rounded-[6px] text-[#94a3b8] hover:text-[#dc2626] hover:bg-[#fef2f2] transition-colors"
+                    title="Delete report"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <ChevronRight className="w-4 h-4 text-[#cbd5e1] group-hover:text-[#0f172a] group-hover:translate-x-0.5 transition-all ml-0.5" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create report modal */}
+      {showCreate && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={() => setShowCreate(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-[14px] shadow-xl border border-[#e2e8f0] p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-[#0f172a]">Create new report</h2>
+              <button
+                onClick={() => setShowCreate(false)}
+                className="p-1.5 rounded-[6px] text-[#94a3b8] hover:text-[#0f172a] hover:bg-[#f1f5f9] transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <label className="block text-xs font-semibold text-[#475569] mb-1">Report name</label>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && submitCreate()}
+              placeholder="e.g. August 2026"
+              className="w-full h-9 px-3 rounded-[8px] border border-[#e2e8f0] text-sm text-[#0f172a] outline-none focus:border-[#94a3b8] mb-3"
+            />
+
+            <label className="block text-xs font-semibold text-[#475569] mb-1">Period</label>
+            <input
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && submitCreate()}
+              placeholder="e.g. Aug 1, 2026 – Aug 31, 2026"
+              className="w-full h-9 px-3 rounded-[8px] border border-[#e2e8f0] text-sm text-[#0f172a] outline-none focus:border-[#94a3b8] mb-5"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="px-4 py-2 rounded-[8px] bg-white border border-[#e2e8f0] text-sm font-medium text-[#475569] hover:text-[#0f172a] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitCreate}
+                disabled={!name.trim()}
+                className="px-4 py-2 rounded-[8px] bg-[#0f172a] hover:bg-[#1e293b] text-white text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Create report
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={(e) => e.stopPropagation()}
-              className="p-1.5 rounded-[6px] text-[#94a3b8] hover:text-[#0f172a] hover:bg-[#f1f5f9] transition-colors"
-              title="Duplicate report"
-            >
-              <Copy className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => e.stopPropagation()}
-              className="p-1.5 rounded-[6px] text-[#94a3b8] hover:text-[#dc2626] hover:bg-[#fef2f2] transition-colors"
-              title="Delete report"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <ChevronRight className="w-4 h-4 text-[#cbd5e1] group-hover:text-[#0f172a] group-hover:translate-x-0.5 transition-all ml-0.5" />
-          </div>
         </div>
-      ))}
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 /* ------------------------------------------------------------------ */
 /* Page — switches between list and detail                             */
 /* ------------------------------------------------------------------ */
 
-export const ReportsPage: React.FC = () => {
+interface ReportsPageProps {
+  reports: ReportSummary[];
+  setReports: React.Dispatch<React.SetStateAction<ReportSummary[]>>;
+}
+
+export const ReportsPage: React.FC<ReportsPageProps> = ({ reports, setReports }) => {
   const [openReportId, setOpenReportId] = useState<string | null>(null);
+
+  const handleCreate = (name: string, period: string) => {
+    const report: ReportSummary = {
+      id: `r${Date.now()}`,
+      name,
+      period,
+      author: 'Admin LMS',
+      created: formatToday(),
+    };
+    setReports((prev) => [report, ...prev]);
+    setOpenReportId(report.id);
+  };
+
+  const handleDuplicate = (id: string) => {
+    setReports((prev) => {
+      const src = prev.find((r) => r.id === id);
+      if (!src) return prev;
+      const copy: ReportSummary = {
+        ...src,
+        id: `r${Date.now()}`,
+        name: `${src.name} (copy)`,
+        created: formatToday(),
+      };
+      const idx = prev.findIndex((r) => r.id === id);
+      const next = [...prev];
+      next.splice(idx + 1, 0, copy);
+      return next;
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    setReports((prev) => prev.filter((r) => r.id !== id));
+    setOpenReportId((cur) => (cur === id ? null : cur));
+  };
 
   if (openReportId) {
     return <ReportDetail onBack={() => setOpenReportId(null)} />;
   }
-  return <ReportsList onOpen={setOpenReportId} />;
+  return (
+    <ReportsList
+      reports={reports}
+      onOpen={setOpenReportId}
+      onCreate={handleCreate}
+      onDuplicate={handleDuplicate}
+      onDelete={handleDelete}
+    />
+  );
 };
