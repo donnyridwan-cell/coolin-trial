@@ -104,6 +104,18 @@ const MENU_TITLES: Record<
   },
 };
 
+// Pages that report site analytics over a time window — only these need the
+// date-range filter and the verified-domain indicator in the header.
+const ANALYTICS_MENUS: MenuId[] = [
+  'overview',
+  'website',
+  'search-marketing',
+  'paid-media',
+  'social-media',
+  'email-marketing',
+  'cro',
+];
+
 export const Header: React.FC<HeaderProps> = ({
   currentMenu,
   onOpenMobile,
@@ -116,6 +128,8 @@ export const Header: React.FC<HeaderProps> = ({
     subtitle: 'AIZone Marketing Client Portal',
     countBadge: undefined,
   };
+
+  const showAnalyticsControls = ANALYTICS_MENUS.includes(currentMenu);
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-white border-b border-[#e2e8f0] px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-[0px_1px_2px_rgba(0,0,0,0.02)]">
@@ -148,7 +162,9 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right controls: Segmented date selector & Search */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Trackly Segmented Date Filter */}
+        {/* Date filter + verified-domain indicator — analytics pages only */}
+        {showAnalyticsControls && (
+        <>
         <div className="hidden md:flex items-center bg-[#f1f5f9] p-1 rounded-[8px] border border-[#e2e8f0] text-xs">
           <Calendar className="w-3.5 h-3.5 text-[#94a3b8] ml-1.5 mr-1" />
           <button
@@ -191,6 +207,8 @@ export const Header: React.FC<HeaderProps> = ({
           <CheckCircle2 className="w-3.5 h-3.5 text-[#16a34a]" />
           <span>aizonemarketing.io</span>
         </div>
+        </>
+        )}
 
         {/* Global Search trigger button (⌘K) */}
         <button
