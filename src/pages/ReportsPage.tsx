@@ -280,6 +280,48 @@ const TechnicalBody = () => (
   </Panel>
 );
 
+// Counts a number up from 0 to its target when mounted, keeping any
+// non-numeric prefix/suffix (e.g. "#", "s", "%", "+"). Respects reduced motion.
+const AnimatedNumber: React.FC<{ value: string; duration?: number }> = ({ value, duration = 900 }) => {
+  const match = value.match(/^([^\d-]*)(-?\d+(?:\.\d+)?)(.*)$/);
+  const prefix = match?.[1] ?? '';
+  const target = match ? parseFloat(match[2]) : 0;
+  const suffix = match?.[3] ?? '';
+  const decimals = match && match[2].includes('.') ? match[2].split('.')[1].length : 0;
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (!match) return;
+    const reduce =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      setDisplay(target);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+      setDisplay(target * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  if (!match) return <>{value}</>;
+  return (
+    <>
+      {prefix}
+      {display.toFixed(decimals)}
+      {suffix}
+    </>
+  );
+};
+
 const SummaryBody = () => (
   <Panel>
     <SectionHeading num="02" title="Performance summary" />
@@ -287,9 +329,14 @@ const SummaryBody = () => (
       {REPORT.highlights.map((h) => {
         const Icon = h.icon;
         return (
-          <div key={h.label} className="rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-4">
-            <Icon className="w-4 h-4 text-[#94a3b8] mb-2" />
-            <div className="text-2xl font-bold text-[#0f172a] tracking-tight leading-none mb-1.5">{h.value}</div>
+          <div
+            key={h.label}
+            className="group rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-4 transition-all duration-150 hover:-translate-y-0.5 hover:border-[#cbd5e1] hover:bg-white hover:shadow-[0px_4px_12px_rgba(0,0,0,0.06)]"
+          >
+            <Icon className="w-4 h-4 text-[#94a3b8] mb-2 transition-colors group-hover:text-[#0f172a]" />
+            <div className="text-2xl font-bold text-[#0f172a] tracking-tight leading-none mb-1.5 tabular-nums">
+              <AnimatedNumber value={h.value} />
+            </div>
             <div className="text-[11px] text-[#64748b] leading-snug">{h.label}</div>
           </div>
         );
