@@ -822,6 +822,16 @@ const ReportDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 const formatToday = () =>
   new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
+// Turn a native date input value ("2026-10-01") into "Oct 1, 2026".
+const formatDateInput = (value: string) =>
+  value
+    ? new Date(`${value}T00:00:00`).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : '';
+
 interface ReportsListProps {
   reports: ReportSummary[];
   onOpen: (id: string) => void;
@@ -834,18 +844,28 @@ const ReportsList: React.FC<ReportsListProps> = ({ reports, onOpen, onCreate, on
   const [showCreate, setShowCreate] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [name, setName] = useState('');
-  const [period, setPeriod] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const openCreate = () => {
     const now = new Date();
     setName(now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
-    setPeriod('');
+    setStartDate('');
+    setEndDate('');
     setShowCreate(true);
+  };
+
+  const buildPeriod = () => {
+    const start = formatDateInput(startDate);
+    const end = formatDateInput(endDate);
+    if (start && end) return `${start} – ${end}`;
+    if (start) return start;
+    return 'Period not set';
   };
 
   const submitCreate = () => {
     if (!name.trim()) return;
-    onCreate(name.trim(), period.trim() || 'Period not set');
+    onCreate(name.trim(), buildPeriod());
     setShowCreate(false);
   };
 
@@ -974,13 +994,31 @@ const ReportsList: React.FC<ReportsListProps> = ({ reports, onOpen, onCreate, on
             />
 
             <label className="block text-xs font-semibold text-[#475569] mb-1">Period</label>
-            <input
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && submitCreate()}
-              placeholder="e.g. Aug 1, 2026 – Aug 31, 2026"
-              className="w-full h-9 px-3 rounded-[8px] border border-[#e2e8f0] text-sm text-[#0f172a] outline-none focus:border-[#94a3b8] mb-5"
-            />
+            <div className="grid grid-cols-2 gap-2 mb-1">
+              <div>
+                <span className="block text-[10px] text-[#94a3b8] mb-1">Start date</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  max={endDate || undefined}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submitCreate()}
+                  className="w-full h-9 px-3 rounded-[8px] border border-[#e2e8f0] text-sm text-[#0f172a] outline-none focus:border-[#94a3b8]"
+                />
+              </div>
+              <div>
+                <span className="block text-[10px] text-[#94a3b8] mb-1">End date</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submitCreate()}
+                  className="w-full h-9 px-3 rounded-[8px] border border-[#e2e8f0] text-sm text-[#0f172a] outline-none focus:border-[#94a3b8]"
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-[#94a3b8] mb-5">{buildPeriod()}</p>
 
             <div className="flex justify-end gap-2">
               <button
